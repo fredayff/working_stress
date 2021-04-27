@@ -1,0 +1,377 @@
+---
+title: "code"
+author: "yifan xu"
+date: "2020/12/20"
+output: pdf_document
+---
+
+
+```{r}
+
+library(janitor)
+library(tidyverse)
+library(haven)
+library(knitr)
+library(car)
+```
+
+
+citation("rmarkdown")
+
+```{r}
+#Import the dataset:
+# General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home.
+
+raw_data <- read_csv('AA0EzcFV.csv')
+```
+
+
+
+
+
+```{r}
+#Plot raw data for each variable we care about：
+
+# Age of respondents
+agep <- raw_data %>% ggplot(aes(x=agegr10)) +
+  geom_bar(position="dodge") +
+  labs(title="Age Distribution of respondents",
+       x="Age Group", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+agep
+
+#Sex of respondents
+sexp <- raw_data %>% ggplot(aes(x=sex)) +
+  geom_bar(position="dodge") +
+  labs(title="Sex distribution of respondents",
+       x="Sex", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." ) 
+sexp
+
+
+
+#income of respondents:
+incop <- raw_data %>% ggplot(aes(x=ttlincg2)) +
+  geom_bar(position="dodge") +
+  labs(title="Personal income group (before tax) of respondents",
+       x="Income - Personal income group (before tax)", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." ) 
+incop
+
+
+
+# Personal appearance satisfaction
+
+app <- raw_data %>% ggplot(aes(x=dos_05)) +
+  geom_bar(position="dodge") +
+  labs(title="Responses to the extend of personal appearance satisfaction ",
+       x="Personal appearance satisfaction", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+app
+
+# Level of satisfaction - Time available to do things that we like doing
+time <- raw_data %>% ggplot(aes(x=dos_08)) +
+  geom_bar(position="dodge") +
+  labs(title="Responses to: How satisfied with the amount of time you have to do the things that you like
+doing? ",
+       x="Level of satisfaction - Time available to do things", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+time
+
+
+# Managenment of workload
+loadp <- raw_data %>% ggplot(aes(x=wir_01)) +
+  geom_bar(position="dodge") +
+  labs(title="Responses to 'How often do you consider your workload manageable?' ",
+       x="Management of workload", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+loadp
+
+
+# Match between current job and field of education or training
+matchp <- raw_data %>% ggplot(aes(x=stj_05)) +
+  geom_bar(position="dodge") +
+  labs(title="Responses to 'Is your current job related to your field of education or training?' ",
+       x="Match between current job and field of education or training", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." ) 
+matchp
+
+
+# Amount of time spent as a family
+satp <- raw_data %>% ggplot(aes(x=fam_03)) +
+  geom_bar(position="dodge") +
+  labs(title="Responses to 'Overall how satisfied are you with the time of time you spend as a family?'",
+       x="Level of satisfaction - Amount of time spent as a family", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+satp
+
+# Self rated health in general
+healthp <- raw_data %>% ggplot(aes(x=srh_110)) +
+  geom_bar(position="dodge") +
+  labs(title="Self-assessed health of respondents",
+       x="Self rated health in general", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+healthp
+
+# Confidence in abilities, even when faced with challenges
+cp <- raw_data %>% ggplot(aes(x=res_03)) +
+  geom_bar(position="dodge") +
+  labs(title="Responses to 'Are confident in your abilities, even when faced with challenges?' ",
+       x="Confidence in abilities, even when faced with challenges", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+
+#stress level of respondents:
+stressp <- raw_data %>% ggplot(aes(x=smg_01)) +
+  geom_bar(position="dodge") +
+  labs(title="Distribution of the amount of sress in life of respondents",
+       x="Stress level", y = "Number", caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home." )
+stressp
+
+```
+
+
+
+```{r}
+# Deal with raw data:
+# Import it again:
+
+sample0 <- read_csv('AA0EzcFV.csv')
+
+
+#rename variables we are interested in:
+sample0 <- sample0 %>% 
+  clean_names() %>% 
+  rename(age_group = agegr10,
+income = ttlincg2,
+personal_appearance = dos_05,
+thing_satisfaction = dos_08,
+workload = wir_01,
+job_match = stj_05,
+family_time = fam_03,
+health_rated = srh_110,
+confidence = res_03,
+no_activity = oda_01m,
+stress = smg_01)
+
+  
+#For the analysis, responses of "effective skip", "don't know", "reject" and "undeclared" in the survey data were considered as missing values, and we ignored and deleted them.
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(age_group), 
+           .funs = funs(ifelse(.=="04"|.=="05"|.=="06"|.=="07"|.=="96"|.=="97"|.=="98"|.=="99", "NA", .)))
+sample0$age_group[sample0$age_group == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+# Since we focus on yound adults, we chose age group of 15-44
+
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(income), 
+           .funs = funs(ifelse(.=="96"|.=="97"|.=="98"|.=="99", "NA", .)))
+sample0$income[sample0$income == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(personal_appearance), 
+           .funs = funs(ifelse(.=="96"|.=="97"|.=="98"|.=="99", "NA", .)))
+sample0$personal_appearance[sample0$personal_appearance == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(thing_satisfaction), 
+           .funs = funs(ifelse(.=="96"|.=="97"|.=="98"|.=="99", "NA", .)))
+sample0$thing_satisfaction[sample0$thing_satisfaction == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(workload), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$workload[sample0$workload == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(job_match), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$job_match[sample0$job_match == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(no_activity), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$no_activity[sample0$no_activity == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(family_time), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$family_time[sample0$family_time == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(health_rated), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$health_rated[sample0$health_rated == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(confidence), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$confidence[sample0$confidence == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(stress), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$stress[sample0$stress == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+
+sample0 <- sample0 %>% 
+  mutate_at(vars(stress), 
+           .funs = funs(ifelse(.=="6"|.=="7"|.=="8"|.=="9", "NA", .)))
+sample0$stress[sample0$stress == "NA"] <- NA
+sample0 <- sample0[complete.cases(sample0),]
+
+
+sample0 <- sample0 %>%
+  mutate(stress.or_not = case_when(stress == "1" ~ "No", 
+                            stress == "2" ~ "No",
+                            stress == "4" ~ "Yes",
+                            stress == "5" ~ "Yes"
+                             ))
+
+sample0 <- sample0 %>%
+  mutate(stress.or.not = case_when(stress == "1" ~ "No", 
+                                   stress == "2" ~ "No", 
+                            stress == "3" ~ "Yes",
+                            stress == "4" ~ "Yes",
+                            stress == "5" ~ "Yes"))
+
+sample5 <- sample0[complete.cases(sample0),]
+
+
+sample5 <- sample5 %>%
+  mutate(workload_manage = case_when(workload == "1" ~ "1", 
+                                   workload == "2" ~ "1", 
+                            workload == "3" ~ "2",
+                            workload == "4" ~ "3",
+                            workload == "5" ~ "3"
+                             ))
+sample5 <- sample5 %>%
+  mutate(family_time_spent = case_when(family_time == "1" ~ "1", 
+                                   family_time == "2" ~ "1", 
+                            family_time == "3" ~ "2",
+                            family_time == "4" ~ "3",
+                            family_time == "5" ~ "3"
+                             ))
+
+sample5 <- sample5 %>%
+  mutate(time_available = case_when(thing_satisfaction == "1" ~ "1", 
+                                   thing_satisfaction == "2" ~ "1", 
+                            thing_satisfaction == "3" ~ "2",
+                            thing_satisfaction == "4" ~ "3",
+                            thing_satisfaction == "5" ~ "3"
+                             ))
+sample5 <- sample5 %>%
+  mutate(match_job = case_when(job_match == "1" ~ "1", 
+                                   job_match == "2" ~ "1", 
+                            job_match == "3" ~ "2",
+                            job_match == "4" ~ "3",
+                            job_match == "5" ~ "3"
+                             ))
+
+```
+
+
+```{r}
+# We divided the dataset into 60% training data set and 40% test data set
+set.seed(4000200)
+train_rows <- sample(rownames(sample5), dim(sample5)[1]*0.6)
+sample6_train <- sample5[train_rows, ]
+valid_rows <- setdiff(rownames(sample5), train_rows)
+sample6_valid <- sample5[valid_rows, ]
+
+```
+
+
+
+
+
+```{r}
+# We built the logistic model:
+model5<- glm(factor(stress.or_not) ~ factor(family_time_spent) +  factor(health_rated) + factor(workload_manage), data=sample6_train, family="binomial")
+summary(model5)
+anova(model5)
+
+
+# Check multi collinearity of predictors by observing their VIF values:
+vif(model5)
+```
+
+
+
+
+```{r}
+# Model validation with the test data set
+model5_valid<- glm(factor(stress.or_not) ~ factor(family_time_spent) +  factor(health_rated)  +  factor(workload_manage), data=sample6_valid, family="binomial")
+summary(model5_valid)
+```
+
+
+
+```{r}
+# Summary of these 2 models
+model5_v <- broom::tidy(model5, conf.int = T)
+kable(model5_v)
+
+model5_v2 <- broom::tidy(model5_valid, conf.int = T)
+kable(model5_v2)
+
+# Obtain confidence intervals for the coefficient estimates of 2 models
+confint(model5)
+confint(model5_valid)
+
+# Prediction ability of our model with the test data set
+fitted.results <- predict(model5_valid,newdata=sample6_valid,type='response')
+fitted.results <- ifelse(fitted.results > 0.5,"Yes","No")
+misClasificError <- mean(fitted.results != sample6_valid$stress.or_not)
+print(paste('Accuracy:',1-misClasificError))
+
+```
+
+
+```{r}
+
+# Plot of the predicted probability of the stress level on each variable
+workload1 <- ggplot(data= NULL ,  aes(x=sample6_train$workload,y=model5$fitted.values)) +
+  geom_point(stats="identity",position=position_dodge(0.2),width=0.8) + theme_bw() +  
+  labs(x = "Management of workload",
+       y = "Predicted probability of the stress level",
+       title = "Predicted probability of the stress level on the management of workload"
+       , caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home.") 
+
+
+# Predicted probability of the stress level on the time spent with family
+family_time1 <- ggplot(data= NULL ,  aes(x=sample6_train$family_time_spent,y=model5$fitted.values)) +
+  geom_point(stats="identity",position=position_dodge(0.2),width=0.8) + theme_bw() +  
+  labs(x = "Time spend with family",
+       y = "Predicted probability of the stress level",
+       title = "Predicted probability of the stress level on the time spent with family"
+       , caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home.") 
+family_time1
+
+# Predicted probability of the stress level on the workload management
+match_job1 <- ggplot(data= NULL ,  aes(x=sample6_train$match_job,y=model5$fitted.values)) +
+  geom_point(stats="identity",position=position_dodge(0.2),width=0.8) + theme_bw() +  
+  labs(x = "Match between current job of education or training",
+       y = "Predicted probability of the stress level",
+       title = "Predicted probability of the stress level on the job match"
+       , caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home.") 
+match_job1
+
+
+# Predicted probability of the stress level on the self rated health
+health1 <- ggplot(data= NULL ,  aes(x=sample6_train$health_rated,y=model5$fitted.values)) +
+  geom_point(stats="identity",position=position_dodge(0.2),width=0.8) + theme_bw() +  
+  labs(x = "Self rated health in general",
+       y = "Predicted probability of the stress level",
+       title = "Predicted probability of the stress level on the self rated health"
+       , caption = "Source: General Social Survey (GSS), Cycle 30, 2016 : Canadians at Work and Home.") 
+health1
+
+```
+
