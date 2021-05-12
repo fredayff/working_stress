@@ -6,6 +6,5 @@ Survey data: Canadian General social survey (GSS), Cycle 30, 2016: Canadians at 
 
 For the analysis, we used the packages: janitor, tidyverse, haven, knitr and car in R and we chose R markdown to produce the report.
 
-## Keywords: 
-Canadian well being; stress level; Sample survey without replacement ; Self-rated health ;
-logistic Regression analysis with R.
+Keywords: 
+Canadian well being; stress level; Sample survey without replacement; Self-rated health; logistic Regression analysis with R.
